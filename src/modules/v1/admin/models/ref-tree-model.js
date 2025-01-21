@@ -40,6 +40,21 @@ const RefTreeSchema = new Schema({
         type: Number, 
         default: 0 
     },
+    generation_1_overflow: {
+        type: Array
+    },
+    generation_2_overflow: {
+        type: Array
+    },
+    generation_3_overflow: {
+        type: Array
+    },
+    generation_4_overflow: {
+        type: Array
+    },
+    generation_5_overflow: {
+        type: Array
+    },
     created_at: { 
         type: Date, 
         default: Date.now 
