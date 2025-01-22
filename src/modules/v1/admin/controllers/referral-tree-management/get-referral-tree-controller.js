@@ -12,8 +12,6 @@ class GetReferralTreeController {
 
            
                 const rootUser = tree.user;
-
-                // Update root user
                 await updateUser(rootUser, "root", rootUser, null);
 
                 // Process Generation 1
@@ -35,8 +33,6 @@ class GetReferralTreeController {
 
                 
                     const referredUsers = await getReferredUsers(userId);
-                    console.log(referredUsers,"referredUsers")
-
                     const gen2Result = await processGeneration(
                         referredUsers,
                         rootUser,
@@ -82,18 +78,14 @@ class GetReferralTreeController {
                 for (const overflowUserId of overflowUsers) {
                     await updateUser(overflowUserId, "generation_3", rootUser, null);
                 }
-                console.log("======================")
                 const refTrees = await RefTree.findOne({ user: rootUser }); 
                 // Check and process Generation 2
                 const isGen2Completed = await processAndCheckGeneration2(refTrees, rootUser);
-                console.log("======================")
 
                 if (isGen2Completed) {
                     // Proceed with next steps if Generation 2 is completed
                     console.log("Proceeding with next steps...");
                    
-
-                    // Handle Overflow for Generation 2
                     await handleOverflow(
                         refTrees.generation_1_overflow,
                         "generation_1_overflow",
@@ -102,7 +94,6 @@ class GetReferralTreeController {
                     );
 
                     const isGen3Completed = await processAndCheckGeneration3(refTrees, rootUser);
-                    console.log("======================")
 
                     if (!isGen3Completed) {
                         // Proceed with next steps if Generation 2 is completed
@@ -162,22 +153,18 @@ export default new GetReferralTreeController();
     selectedUsers.push(...priorityUsers.slice(0, maxUsers));
 
     // Step 3: Fill remaining slots with non-priority users
-    let overflowUsers = []; // To store users who are not selected
+    let overflowUsers = []; 
     if (selectedUsers.length < maxUsers) {
         const nonPriorityUsers = userIds.filter((userId) => !priorityUsers.includes(userId));
         const remainingSlots = maxUsers - selectedUsers.length;
         selectedUsers.push(...nonPriorityUsers.slice(0, remainingSlots));
-        overflowUsers = nonPriorityUsers.slice(remainingSlots); // Store the remaining users
+        overflowUsers = nonPriorityUsers.slice(remainingSlots);
     } else {
-        overflowUsers = userIds.filter((userId) => !selectedUsers.includes(userId)); // If slots are full, all others are overflow
+        overflowUsers = userIds.filter((userId) => !selectedUsers.includes(userId)); 
     }
-
-    console.log(selectedUsers, "selectedUsers")
 
     // Store the selected users in the ReferralTree
     await updateReferralTree(generationType, rootUser, selectedUsers, refBy);
-
-    // Optionally store the overflow users in the ReferralTree or another structure
     await updateOverflowUsers(generationType, rootUser, overflowUsers);
 
     return { selectedUsers };
@@ -200,7 +187,7 @@ const updateReferralTree = async (generationType, rootUser, selectedUsers, refBy
         pushField.generation_5 = { $each: selectedUsers };
     }
 
-    // Ensure the root_user and ref_by are set correctly (optional, for completeness)
+    
     if (!updateData.root_user) {
         updateData.root_user = rootUser;
     }
@@ -212,10 +199,10 @@ const updateReferralTree = async (generationType, rootUser, selectedUsers, refBy
     await RefTree.updateOne(
         { user: rootUser },
         {
-            $push: pushField, // Push to the generation array
-            $set: updateData, // Set root_user and ref_by if needed
+            $push: pushField,
+            $set: updateData, 
         },
-        { upsert: true } // Create a new document if none exists
+        { upsert: true } 
     );
 };
 
@@ -227,7 +214,7 @@ const updateReferralTree = async (generationType, rootUser, selectedUsers, refBy
  */
 const getReferredUsers = async (userId) => {
     const userIds = await User.distinct("_id", { referred_by: userId });
-    return userIds; // This will return a distinct array of IDs
+    return userIds; 
     
 };
 
@@ -259,8 +246,6 @@ const updateOverflowUsers = async (generationType, rootUser, overflowUsers) => {
     const updateData = {};
     const field = `${generationType}_overflow`;
 
-    console.log(field, "field", overflowUsers)
-
     // Add overflow users to a separate field for tracking
     updateData[field]= overflowUsers
 
@@ -283,7 +268,6 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
  */
 const handleGeneration2Overflow = async (overflowUsers, overflowSource, generation_3, rootUser) => {
     if (!overflowUsers.length) return;
-    console.log(overflowUsers, "overflowUsers");
 
     const maxUsers = 2; 
     const completedUsers = []; 
@@ -299,23 +283,20 @@ const handleGeneration2Overflow = async (overflowUsers, overflowSource, generati
         } else {
             while (referredUsers.length < maxUsers && overflowUsers.length > 0) {
                 const overflowUserId = overflowUsers.shift(); 
-                console.log(overflowUserId, "overflowUserId -1")
+            
                 await User.updateOne(
                     { _id: overflowUserId },
                     { ref_by: userId } 
                 );
                 
               
-                const overflowUserIdObject = new mongoose.Types.ObjectId(overflowUserId); // Use 'new' to create an ObjectId instance
+                const overflowUserIdObject = new mongoose.Types.ObjectId(overflowUserId); 
 
-                console.log(overflowUserIdObject,"overflowUserIdObject")
 
-                const a= await RefTree.updateOne(
+                await RefTree.updateOne(
                     { user: rootUser },
-                    { $pull: { generation_2_overflow: overflowUserIdObject } } // Remove user from the array
+                    { $pull: { generation_2_overflow: overflowUserIdObject } } 
                 );
-
-                console.log(overflowUserId,"overflowUserId")
 
                 result.push(overflowUserId);
                 console.log(`Assigned overflow user ${overflowUserId} to ${userId} and removed from generation_1_overflow.`);
@@ -334,23 +315,19 @@ const handleGeneration2Overflow = async (overflowUsers, overflowSource, generati
         } else {
             while (newReferredUsers.length < maxUsers && overflowUsers.length > 0) {
                 const overflowUserId = overflowUsers.shift(); 
-                console.log(overflowUserId, "overflowUserId -1")
+   
                 await User.updateOne(
                     { _id: overflowUserId },
                     { ref_by: userId } 
                 );
                 
             
-                const overflowUserIdObject = new mongoose.Types.ObjectId(overflowUserId); // Use 'new' to create an ObjectId instance
+                const overflowUserIdObject = new mongoose.Types.ObjectId(overflowUserId); 
 
-                console.log(overflowUserIdObject,"overflowUserIdObject")
-
-                const a= await RefTree.updateOne(
+                await RefTree.updateOne(
                     { user: rootUser },
-                    { $pull: { generation_2_overflow: overflowUserIdObject } } // Remove user from the array
+                    { $pull: { generation_2_overflow: overflowUserIdObject } } 
                 );
-
-                console.log(overflowUserId,"overflowUserId")
 
                 result.push(overflowUserId);
                 console.log(`Assigned overflow user ${overflowUserId} to ${userId} and removed from generation_1_overflow.`);
@@ -362,8 +339,6 @@ const handleGeneration2Overflow = async (overflowUsers, overflowSource, generati
         { $push: { generation_3:  result} }
     );
 
-    
-    console.log(completedUsers, "Users who completed generation 2");
 
     if (completedUsers.length === generation_3.length) {
         console.log("All users in generation_3 have completed their referrals.");
@@ -371,7 +346,7 @@ const handleGeneration2Overflow = async (overflowUsers, overflowSource, generati
         console.log("Not all users in generation_3 have completed their referrals. Remaining overflow users:",overflowUsers);
     }
 
-    // Handle any remaining overflow users
+
     if (overflowUsers.length > 0) {
         console.log("Remaining overflow users:", overflowUsers);
     }
@@ -379,7 +354,6 @@ const handleGeneration2Overflow = async (overflowUsers, overflowSource, generati
 
 const handleOverflow = async (overflowUsers, overflowSource, generation_2, rootUser) => {
     if (!overflowUsers.length) return;
-    console.log(overflowUsers, "overflowUsers");
 
     const maxUsers = 2; 
     const completedUsers = []; 
@@ -394,7 +368,7 @@ const handleOverflow = async (overflowUsers, overflowSource, generation_2, rootU
         } else {
             while (referredUsers.length < maxUsers && overflowUsers.length > 0) {
                 const overflowUserId = overflowUsers.shift(); 
-                console.log(overflowUserId, "overflowUserId -1")
+               
                 await User.updateOne(
                     { _id: overflowUserId },
                     { ref_by: userId } 
@@ -403,14 +377,11 @@ const handleOverflow = async (overflowUsers, overflowSource, generation_2, rootU
               
                 const overflowUserIdObject = new mongoose.Types.ObjectId(overflowUserId); // Use 'new' to create an ObjectId instance
 
-                console.log(overflowUserIdObject,"overflowUserIdObject")
 
-                const a= await RefTree.updateOne(
+                await RefTree.updateOne(
                     { user: rootUser },
                     { $pull: { generation_1_overflow: overflowUserIdObject } } // Remove user from the array
                 );
-
-                console.log(overflowUserId,"overflowUserId")
 
                 result.push(overflowUserId);
                 console.log(`Assigned overflow user ${overflowUserId} to ${userId} and removed from generation_1_overflow.`);
@@ -422,8 +393,6 @@ const handleOverflow = async (overflowUsers, overflowSource, generation_2, rootU
         { $push: { generation_3:  result} }
     );
 
-    
-    console.log(completedUsers, "Users who completed generation 2");
 
     if (completedUsers.length === generation_2.length) {
         console.log("All users in generation_2 have completed their referrals.");
@@ -468,14 +437,12 @@ const processAndCheckGeneration2 = async (tree, rootUser) => {
     // Check if generation 2 is completed
     const isCompleted = await isGenerationCompleted(generation2Users, requiredReferrals);
 
-    console.log(isCompleted,"isCompleted")
-
     if (isCompleted) {
         console.log("Generation 2 is completed.");
-        return true; // Proceed to the next step
+        return true;
     } else {
         console.log("Generation 2 is not completed.");
-        // Optionally, log incomplete users for debugging
+
         for (const userId of generation2Users) {
             const referralCount = await User.countDocuments({ referred_by: userId });
             if (referralCount < requiredReferrals) {
@@ -488,19 +455,17 @@ const processAndCheckGeneration2 = async (tree, rootUser) => {
 
 const processAndCheckGeneration3 = async (tree, rootUser) => {
     const generation3Users = tree.generation_2 || [];
-    const requiredReferrals = 2; // Referrals required per user
+    const requiredReferrals = 2; 
 
     // Check if generation 3 is completed
     const isCompleted = await isGenerationCompleted(generation3Users, requiredReferrals);
 
-    console.log(isCompleted,"isCompleted")
-
     if (isCompleted) {
         console.log("Generation 3 is completed.");
-        return true; // Proceed to the next step
+        return true; 
     } else {
         console.log("Generation 3 is not completed.");
-        // Optionally, log incomplete users for debugging
+        
         for (const userId of generation3Users) {
             const referralCount = await User.countDocuments({ referred_by: userId });
             const referCount = await User.countDocuments({ ref_by: userId });
