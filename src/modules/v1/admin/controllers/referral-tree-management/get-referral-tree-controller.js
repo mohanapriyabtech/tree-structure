@@ -35,6 +35,7 @@ class GetReferralTreeController {
 
                 
                     const referredUsers = await getReferredUsers(userId);
+                    console.log(referredUsers,"referredUsers")
 
                     const gen2Result = await processGeneration(
                         referredUsers,
@@ -225,7 +226,9 @@ const updateReferralTree = async (generationType, rootUser, selectedUsers, refBy
  * @returns {Array} Referred users
  */
 const getReferredUsers = async (userId) => {
-    return await User.find({ referred_by: userId }).select("_id").lean();
+    const userIds = await User.distinct("_id", { referred_by: userId });
+    return userIds; // This will return a distinct array of IDs
+    
 };
 
 /**
@@ -256,8 +259,10 @@ const updateOverflowUsers = async (generationType, rootUser, overflowUsers) => {
     const updateData = {};
     const field = `${generationType}_overflow`;
 
+    console.log(field, "field", overflowUsers)
+
     // Add overflow users to a separate field for tracking
-    updateData[field] = overflowUsers;
+    updateData[field]= overflowUsers
 
     await RefTree.updateOne(
         { user: rootUser },
