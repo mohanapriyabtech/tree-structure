@@ -26,6 +26,7 @@ import updateCategory from '../controllers/category-management/update-category';
 import createReferralTreeController from '../controllers/referral-tree-management/create-referral-tree-controller';
 import getReferralTreeController from '../controllers/referral-tree-management/get-referral-tree-controller';
 import rankGivenToRootUserController from '../controllers/referral-tree-management/rank-given-to-root-user-controller';
+import checkUserExistAndReferrel from '../controllers/collaborative-contribution-referral-tree-management/check-user-exist-and -referrel';
 
 
 const adminRouter = express.Router();
@@ -65,5 +66,7 @@ adminRouter.get('/create-refferal', createReferralTreeController.update);
 adminRouter.get('/get-refferal', getReferralTreeController.processAndUpdateReferralTree);
 
 adminRouter.get('/rank', rankGivenToRootUserController.processAndUpdateReferralTree);
+
+adminRouter.get('/create-base-referral-list', checkUserExistAndReferrel.update);
 
 module.exports = adminRouter;
